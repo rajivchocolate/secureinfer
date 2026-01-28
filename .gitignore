@@ -1,0 +1,66 @@
+# Binaries
+secureinfer
+secureinfer-linux
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go coverage
+*.out
+coverage.html
+
+# Go workspace
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Data
+data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+logs/
+
+# Temp
+tmp/
+temp/
+
+# Build
+dist/
+build/
+
+# Docker
+.docker/
+
+# Kubernetes secrets (never commit!)
+k8s/**/secret*.yaml
+!k8s/**/secret*.yaml.example
+
+# Coverage
+htmlcov/
+
+# Air (hot reload)
+tmp/
