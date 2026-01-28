@@ -173,13 +173,13 @@ k8s-shell:
 # =============================================================================
 
 demo-extraction:
-	$(GOCMD) run demos/extraction_attack.go
+	$(GOCMD) run demos/extraction/main.go
 
 demo-injection:
-	$(GOCMD) run demos/prompt_injection.go
+	$(GOCMD) run demos/injection/main.go
 
 demo-dos:
-	$(GOCMD) run demos/dos_attack.go
+	$(GOCMD) run demos/dos/main.go
 
 demo-all: demo-injection demo-extraction demo-dos
 

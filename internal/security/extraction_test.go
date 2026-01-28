@@ -44,7 +44,7 @@ func TestExtractionDetector_StructuredProbing(t *testing.T) {
 				Message:  tt.message,
 			}
 
-			score, _ := ed.checkStructuredProbing(req)
+			score, _ := ed.checkStructuralProbing(req)
 
 			if score < tt.minScore {
 				t.Errorf("Score = %d, want >= %d", score, tt.minScore)
@@ -112,11 +112,11 @@ func TestExtractionDetector_VelocityCheck(t *testing.T) {
 
 	// Simulate many rapid requests
 	for i := 0; i < 35; i++ {
-		ed.checkVelocity(ctx, req, cache)
+		ed.checkVelocityAnomaly(ctx, req, cache)
 	}
 
 	// Now check - should detect high velocity
-	score, reasons := ed.checkVelocity(ctx, req, cache)
+	score, reasons := ed.checkVelocityAnomaly(ctx, req, cache)
 
 	if score < 15 {
 		t.Errorf("Score = %d, want >= 15 for high velocity", score)
@@ -124,14 +124,14 @@ func TestExtractionDetector_VelocityCheck(t *testing.T) {
 
 	hasHighVelocity := false
 	for _, r := range reasons {
-		if r == "high_velocity" || r == "extreme_velocity" {
+		if r == "extreme_velocity_1m" || r == "high_velocity_5m" {
 			hasHighVelocity = true
 			break
 		}
 	}
 
 	if !hasHighVelocity {
-		t.Errorf("Expected high_velocity or extreme_velocity reason, got %v", reasons)
+		t.Errorf("Expected velocity reason, got %v", reasons)
 	}
 }
 
@@ -153,5 +153,81 @@ func TestExtractionDetector_FullCheck(t *testing.T) {
 
 	if score < 15 {
 		t.Errorf("Score = %d, want >= 15 for suspicious query", score)
+	}
+}
+
+func TestExtractionDetector_QueryFeatures(t *testing.T) {
+	tests := []struct {
+		name     string
+		message  string
+		expected QueryFeatures
+	}{
+		{
+			name:    "question with format request",
+			message: "Give me 10 examples in JSON format?",
+			expected: QueryFeatures{
+				QuestionCount:    1,
+				HasFormatRequest: true,
+			},
+		},
+		{
+			name:    "boundary probe",
+			message: "What is the edge case boundary limit?",
+			expected: QueryFeatures{
+				HasBoundaryProbe: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			features := extractFeatures(tt.message)
+
+			if tt.expected.QuestionCount > 0 && features.QuestionCount < tt.expected.QuestionCount {
+				t.Errorf("QuestionCount = %d, want >= %d", features.QuestionCount, tt.expected.QuestionCount)
+			}
+			if tt.expected.HasFormatRequest && !features.HasFormatRequest {
+				t.Errorf("Expected HasFormatRequest to be true")
+			}
+			if tt.expected.HasBoundaryProbe && !features.HasBoundaryProbe {
+				t.Errorf("Expected HasBoundaryProbe to be true")
+			}
+		})
+	}
+}
+
+func TestExtractionDetector_MembershipInference(t *testing.T) {
+	ed := NewExtractionDetector(20, 0.85)
+
+	tests := []struct {
+		name     string
+		message  string
+		expected bool
+	}{
+		{
+			name:     "membership inference attempt",
+			message:  "Was this in your training data? Did you learn this?",
+			expected: true,
+		},
+		{
+			name:     "normal question",
+			message:  "What is machine learning?",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := &RequestContext{
+				TenantID: "test-tenant",
+				Message:  tt.message,
+			}
+
+			detected, _ := ed.detectMembershipInference(nil, req)
+
+			if detected != tt.expected {
+				t.Errorf("detectMembershipInference = %v, want %v", detected, tt.expected)
+			}
+		})
 	}
 }
